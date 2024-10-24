@@ -1,8 +1,14 @@
-#using VortexLattice
+using VortexLattice
+using Plots
 include("MyVortexLattice.jl")
 #using .MyVortexLattice
 import .MyVortexLattice
 
+"""
+testPoints()
+This function runs a simple test on MyVortexLattice.grid_from_elliptical_edge
+    and outputs a graph representing the grid created
+"""
 function testPoints()
     grid = MyVortexLattice.grid_from_elliptical_edge(5, 20, 5, 15)
 
@@ -14,21 +20,11 @@ function testPoints()
     scatter!(show = true)
 end
 
+#testPoints()
+
+
 # geometry (right half of the wing)
-
-#theta = [2.0*pi/180, 2.0*pi/180] # twist (in radians)
-#phi = [0.0, 0.0] # section rotation about the x-axis
-#fc = fill((xc) -> 0, 2) # camberline function for each section (y/c = f(x/c))
-
-#xle, yle, chord = ellipicalWingGenerator(4, 15, 12)
-xyz = MyVortexLattice.grid_from_elliptical_edge(5, 20, 6, 15)
-grid, surface = grid_to_surface_panels(xyz, mirror = true)
-
-# discretization parameters
-#ns = 12 # number of spanwise panels
-#nc = 6  # number of chordwise panels
-#spacing_s = Sine() # spanwise discretization scheme
-#spacing_c = Uniform() # chordwise discretization scheme
+xyzw = MyVortexLattice.grid_from_elliptical_edge(5, 20, 6, 15)
 
 # reference parameters
 Sref = 30.0 # reference area
@@ -39,7 +35,7 @@ Vinf = 1.0 # reference velocity (magnitude)
 ref = Reference(Sref, cref, bref, rref, Vinf)
 
 # freestream parameters
-alpha = 1.0*pi/180 # angle of attack
+alpha = -4.0*pi/180 # angle of attack (is negative because here we are defining the angle of the freestream, not the wing)
 beta = 0.0 # sideslip angle
 Omega = [0.0, 0.0, 0.0] # rotational velocity around the reference location
 fs = Freestream(Vinf, alpha, beta, Omega)
@@ -47,9 +43,10 @@ fs = Freestream(Vinf, alpha, beta, Omega)
 # construct surface
 #grid, surface = wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc;
 #    fc = fc, spacing_s=spacing_s, spacing_c=spacing_c)
+grid, wing_surface = grid_to_surface_panels(xyz, mirror = false)
 
 # create vector containing all surfaces
-surfaces = [surface]
+surfaces = [wing_surface]
 
 # we can use symmetry since the geometry and flow conditions are symmetric about the X-Z axis
 symmetric = true

@@ -10,8 +10,8 @@ at each of the sections so that your wing geometry approximates an ellipse.
 with many sections.
 =#
 
-using Plots
-using VortexLattice
+#using Plots
+#using VortexLattice
 
 module MyVortexLattice
 
@@ -24,17 +24,17 @@ This function calculates the positions of points along the leading edge
 root_chord defines the maximum length of the chord
 span is the span of the entire wing (not just the right half)
 num_of_sections is the number of points defined along the leading edge
+
+Note that the orgin is in the center of the wing.
 """
 function ellipicalWingGenerator(root_chord, span, num_of_sections)
-    #this function calculates the positions of wing tip locations for
-        #an apporoximation of an ellipical wing. Note that the coordinate
-        #system used places the orgin in the center of the wing
     a = root_chord / 2
     b = span / 2
     y = range(start = 0, stop = b, length = num_of_sections)
     x = (a ^ 2) .* (1 .- ((y .^ 2) ./ (b ^ 2)))
     x = sqrt.(x)
-    chord_lengths = 2 .* x
+    chord_lengths = 2 .* x 
+    x = x .+ (a + 0.001)
     return x, y, chord_lengths
 end
 """
@@ -45,14 +45,16 @@ span is the span of the entire wing (not just the right half)
 chord_points is the number of chordwise points
 span_points is the number of spanwise points
 This function returns a (3, chord_points, span_points) matrix of points
+
+Note that the orgin is in the center of the wing.
 """
 function grid_from_elliptical_edge(root_chord, span, chord_points, span_points)
     #initialize the grid
-    grid = zeros(Float64, 3, chord_points, span_points)
+    grid = zeros(Float64, 3, chord_points, span_points-1)
     
     x_leading, y_leading, chord_lengths = ellipicalWingGenerator(root_chord, span, span_points)
 
-    for j in 1:span_points #traverse spanwise
+    for j in 1:span_points-1 #traverse spanwise
         for i in 1:chord_points #traverse chordwise
             #define x
             grid[1, i, j] = x_leading[j] - (((i-1) / (chord_points-1)) * chord_lengths[j])
