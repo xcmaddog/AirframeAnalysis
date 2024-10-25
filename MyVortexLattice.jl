@@ -15,6 +15,8 @@ with many sections.
 
 module MyVortexLattice
 
+using Rotations
+
 export ellipicalWingGenerator, grid_from_elliptical_edge
 
 """
@@ -47,7 +49,7 @@ function ellipicalWingGenerator(root_chord, span, num_of_sections, chordwise_tra
     return x, y, chord_lengths, area, average_chord
 end
 """
-grid_from_elliptical_edge(root_chord, span, chord_points, span_points)
+grid_from_elliptical_edge(root_chord, span, chord_points, span_points, rotation, chordwise_translation, vertical_translation)
 
 This function returns a grid of points that represent the right side of a level wing
 
@@ -55,12 +57,15 @@ root_chord defines the maximum length of the chord
 span is the span of the entire wing (not just the right half)
 chord_points is the number of chordwise points
 span_points is the number of spanwise points
+rotation is an angle in degrees and defines at what angle the wing will be (with reference to the x(chordwise) axis)
+chordwise_translation is how far back the wing is moved back
+vertical_translation is how far up the wing is moved
 
 This function returns a (3, chord_points, span_points) matrix of points, the
     area of the wing before it was discretized, and an approximation of the 
     average chord length
 """
-function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, chordwise_translation)
+function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, rotation, chordwise_translation, vertical_translation)
     #initialize the grid
     grid = zeros(Float64, 3, chord_points, span_points-1)
     
@@ -74,6 +79,30 @@ function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, 
             grid[2, i, j] = y_leading[j]
         end
     end
+
+    #rotate the wing (about the y/spanwise axis)
+    #define the rotation
+    rot = Rotations.RotY(-rotation * (pi/180))
+    for j in 1:size(grid)[3] #traverse spanwise
+        for i in 1:size(grid)[2] #traverse chordwise
+            point = [grid[1,i,j] grid[2,i,j] grid[3,i,j]] #pull the point into a single vector
+            point = point * rot #rotate the point
+            grid[1,i,j] = point[1] #put the point back ino the grid
+            grid[2,i,j] = point[2]
+            grid[3,i,j] = point[3]
+        end
+    end
+
+    #translate it back up so that the front of the leading edge is at z = 0 again and translate it any further that it might need
+    #get the distance the wing "fell" when rotated
+    fall = -grid[3,1,1]
+
+    for j in 1:size(grid)[3] #traverse spanwise
+        for i in 1:size(grid)[2] #traverse chordwise
+            grid[3,i,j] = grid[3,i,j] + vertical_translation + fall
+        end
+    end
+
     return grid, area, average_chord
 end
 

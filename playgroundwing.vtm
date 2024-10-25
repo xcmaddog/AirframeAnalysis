@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VTKFile type="vtkMultiBlockDataSet" version="1.0" byte_order="LittleEndian">
+  <vtkMultiBlockDataSet>
+    <DataSet index="0" file="playgroundwing_1.vtp"/>
+    <DataSet index="1" file="playgroundwing_2.vtp"/>
+    <DataSet index="2" file="playgroundwing_3.vtp"/>
+    <DataSet index="3" file="playgroundwing_4.vtp"/>
+    <DataSet index="4" file="playgroundwing_5.vtp"/>
+    <DataSet index="5" file="playgroundwing_6.vtp"/>
+    <DataSet index="6" file="playgroundwing_7.vtp"/>
+    <DataSet index="7" file="playgroundwing_8.vtp"/>
+  </vtkMultiBlockDataSet>
+</VTKFile>

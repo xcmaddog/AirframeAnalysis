@@ -10,7 +10,7 @@ This function runs a simple test on MyVortexLattice.grid_from_elliptical_edge
     and outputs a graph representing the grid created
 """
 function testPoints()
-    grid, Sref, Cref = MyVortexLattice.grid_from_elliptical_edge(5, 20, 6, 15, 0)
+    grid, -, - = MyVortexLattice.grid_from_elliptical_edge(5, 20, 6, 15, 0)
 
     scatter(grid[1, 1 ,:], grid[2,1,:])
 
@@ -25,18 +25,21 @@ end
 #define parameters
 wing_root_chord = 5
 wing_span = 20
+wing_angle = 2
 
 tail_root_chord = 2
 tail_span = 5
-tail_placement = 15
+tail_x_placement = 15
+tail_z_placement = 3
 
+#root_chord, span, chord_points, span_points, rotation, chordwise_translation, vertical_translation
 # geometry (right half of the wing)
 wing_xyz, wing_refrence_area, wing_refrence_chord = 
-    MyVortexLattice.grid_from_elliptical_edge(wing_root_chord, wing_span, 6, 15, 0)
+    MyVortexLattice.grid_from_elliptical_edge(wing_root_chord, wing_span, 6, 15, wing_angle, 0, 0)
  
 # geometry (right half of tail)
 tail_xyz, tail_reference_area, tail_reference_chord = 
-    MyVortexLattice.grid_from_elliptical_edge(tail_root_chord, tail_span, 6, 10, tail_placement)
+    MyVortexLattice.grid_from_elliptical_edge(tail_root_chord, tail_span, 6, 10, 0, tail_x_placement, tail_z_placement)
 
 # reference parameters (These are based on the wing only, excluding the tail)
 #Sref = 30.0 # reference area
@@ -56,11 +59,12 @@ fs = Freestream(Vinf, alpha, beta, Omega)
 #grid, surface = wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc;
 #    fc = fc, spacing_s=spacing_s, spacing_c=spacing_c)
 wing_grid, wing_surface = grid_to_surface_panels(wing_xyz, mirror = false)
-tail_grid, tail_suface = grid_to_surface_panels(tail_xyz, mirror = false)
+tail_grid, tail_surface = grid_to_surface_panels(tail_xyz, mirror = false)
 
 # create vector containing all surfaces
-#surfaces = [wing_surface, tail_suface]
-surfaces = [wing_surface]
+surfaces = [wing_surface, tail_surface]
+#surfaces = [wing_surface]
+#surfaces = [tail_surface]
 
 # we can use symmetry since the geometry and flow conditions are symmetric about the X-Z axis
 symmetric = true
@@ -74,8 +78,8 @@ CF, CM = body_forces(system; frame=Wind())
 # perform far-field analysis
 CDiff = far_field_drag(system)
 
-CD, CY, CL = CF # CD = drag, CY = side forces, CL = lift
-Cl, Cm, Cn = CM # Cl = , Cm = pitching moment, Cn =
+#CD, CY, CL = CF # CD = drag, CY = side forces, CL = lift
+#Cl, Cm, Cn = CM # Cl = , Cm = pitching moment, Cn =
 
 
 function printResults(CF, CM, CDiff)
@@ -91,16 +95,20 @@ function printResults(CF, CM, CDiff)
 end
 
 function draw_airframe(grids)
-    scatter()
+    scatter3d(aspect_ratio=:equal)
     for grid in grids
         for i in range(1, size(grid)[2])
-            scatter!(grid[1, i ,:], grid[2, i,:])
+            for j in range(1, size(grid)[3])
+                scatter3d!([grid[1, i, j]], [grid[2, i, j]], [grid[3, i, j]])
+            end
         end
     end
-    scatter!(show = true)
+    scatter3d!(show = true)
 end
 
-draw_airframe([wing_xyz, tail_xyz])
+#draw_airframe([wing_grid, tail_grid])
 
 printResults(CF, CM, CDiff)
 
+properties = get_surface_properties(system)
+write_vtk("playgroundwing", surfaces, properties, symmetric = [true, true])
