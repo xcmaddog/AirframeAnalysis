@@ -10,11 +10,11 @@ This function runs a simple test on MyVortexLattice.grid_from_elliptical_edge
     and outputs a graph representing the grid created
 """
 function testPoints()
-    grid = MyVortexLattice.grid_from_elliptical_edge(5, 20, 5, 15)
+    grid, Sref, Cref = MyVortexLattice.grid_from_elliptical_edge(5, 20, 6, 15, 0)
 
     scatter(grid[1, 1 ,:], grid[2,1,:])
 
-    for i in range(2,5)
+    for i in range(2,6)
         scatter!(grid[1, i ,:], grid[2, i,:])
     end
     scatter!(show = true)
@@ -22,20 +22,32 @@ end
 
 #testPoints()
 
+#define parameters
+wing_root_chord = 5
+wing_span = 20
+
+tail_root_chord = 2
+tail_span = 5
+tail_placement = 15
 
 # geometry (right half of the wing)
-xyzw = MyVortexLattice.grid_from_elliptical_edge(5, 20, 6, 15)
+wing_xyz, wing_refrence_area, wing_refrence_chord = 
+    MyVortexLattice.grid_from_elliptical_edge(wing_root_chord, wing_span, 6, 15, 0)
+ 
+# geometry (right half of tail)
+tail_xyz, tail_reference_area, tail_reference_chord = 
+    MyVortexLattice.grid_from_elliptical_edge(tail_root_chord, tail_span, 6, 10, tail_placement)
 
-# reference parameters
-Sref = 30.0 # reference area
-cref = 2.0  # reference chord
-bref = 15.0 # reference span
+# reference parameters (These are based on the wing only, excluding the tail)
+#Sref = 30.0 # reference area
+#cref = 2.0  # reference chord
+#bref = 15.0 # reference span
 rref = [0.50, 0.0, 0.0] # reference location for rotations/moments (typically the c.g.)
 Vinf = 1.0 # reference velocity (magnitude)
-ref = Reference(Sref, cref, bref, rref, Vinf)
+ref = Reference(wing_refrence_area, wing_refrence_chord, wing_span, rref, Vinf)
 
 # freestream parameters
-alpha = -4.0*pi/180 # angle of attack (is negative because here we are defining the angle of the freestream, not the wing)
+alpha = -1.0*pi/180 # angle of attack (is negative because here we are defining the angle of the freestream, not the wing)
 beta = 0.0 # sideslip angle
 Omega = [0.0, 0.0, 0.0] # rotational velocity around the reference location
 fs = Freestream(Vinf, alpha, beta, Omega)
@@ -43,9 +55,11 @@ fs = Freestream(Vinf, alpha, beta, Omega)
 # construct surface
 #grid, surface = wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc;
 #    fc = fc, spacing_s=spacing_s, spacing_c=spacing_c)
-grid, wing_surface = grid_to_surface_panels(xyz, mirror = false)
+wing_grid, wing_surface = grid_to_surface_panels(wing_xyz, mirror = false)
+tail_grid, tail_suface = grid_to_surface_panels(tail_xyz, mirror = false)
 
 # create vector containing all surfaces
+#surfaces = [wing_surface, tail_suface]
 surfaces = [wing_surface]
 
 # we can use symmetry since the geometry and flow conditions are symmetric about the X-Z axis
@@ -63,8 +77,30 @@ CDiff = far_field_drag(system)
 CD, CY, CL = CF # CD = drag, CY = side forces, CL = lift
 Cl, Cm, Cn = CM # Cl = , Cm = pitching moment, Cn =
 
-println(CF)
-println()
-println(CM)
-println()
-println(CDiff)
+
+function printResults(CF, CM, CDiff)
+    println("Coefficient of drag: " * string(round(CF[1], digits = 6)))
+    println("Coefficient of spanwise forces: " * string(round(CF[2], digits = 6)))
+    println("Coefficient of lift: " * string(round(CF[3], digits = 6)))
+    println()
+    println("Coefficient of roll or yaw: " * string(round(CM[1], digits = 6)))
+    println("Coefficient of pitching moment: " * string(round(CM[2], digits = 6)))
+    println("Coefficient of roll or yaw: " * string(round(CM[3], digits = 6)))
+    println()
+    println("Coefficient of drag from far field analysis: " * string(round(CDiff, digits = 6)))
+end
+
+function draw_airframe(grids)
+    scatter()
+    for grid in grids
+        for i in range(1, size(grid)[2])
+            scatter!(grid[1, i ,:], grid[2, i,:])
+        end
+    end
+    scatter!(show = true)
+end
+
+draw_airframe([wing_xyz, tail_xyz])
+
+printResults(CF, CM, CDiff)
+
