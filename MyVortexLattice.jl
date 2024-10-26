@@ -16,8 +16,9 @@ with many sections.
 module MyVortexLattice
 
 using Rotations
+using Plots
 
-export ellipicalWingGenerator, grid_from_elliptical_edge
+export ellipical_wing_generator, grid_from_elliptical_edge, print_results
 
 """
 ellipicalWingGenerator(root_chord, span, num_of_sections)
@@ -36,7 +37,7 @@ Returns the x and y positions of points along the leading edge, the chord
 
 Note that the orgin is at the center of the leading edge of the wing before applying the translation.
 """
-function ellipicalWingGenerator(root_chord, span, num_of_sections, chordwise_translation)
+function ellipical_wing_generator(root_chord, span, num_of_sections, chordwise_translation)
     a = root_chord / 2
     b = span / 2
     y = range(start = 0, stop = b, length = num_of_sections)
@@ -44,7 +45,10 @@ function ellipicalWingGenerator(root_chord, span, num_of_sections, chordwise_tra
     x = sqrt.(x)
     chord_lengths = 2 .* x 
     x = x .+ (chordwise_translation + a)
-    area = pi * a * b
+    area = 0
+    for i in 1:(length(chord_lengths) - 1)
+        area = area + (chord_lengths[i] * (y[i+1] - y[i]))
+    end
     average_chord = sum(chord_lengths) / length(chord_lengths)
     return x, y, chord_lengths, area, average_chord
 end
@@ -64,12 +68,15 @@ vertical_translation is how far up the wing is moved
 This function returns a (3, chord_points, span_points) matrix of points, the
     area of the wing before it was discretized, and an approximation of the 
     average chord length
+
+Note that the spanwise section representing the tip of the wing is omitted because the chord length is zero
 """
-function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, rotation, chordwise_translation, vertical_translation)
+function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, rotation, chordwise_translation, vertical_translation, vertical)
+
     #initialize the grid
     grid = zeros(Float64, 3, chord_points, span_points-1)
     
-    x_leading, y_leading, chord_lengths, area, average_chord = ellipicalWingGenerator(root_chord, span, span_points, chordwise_translation)
+    x_leading, y_leading, chord_lengths, area, average_chord = ellipical_wing_generator(root_chord, span, span_points, chordwise_translation)
 
     for j in 1:span_points-1 #traverse spanwise
         for i in 1:chord_points #traverse chordwise
@@ -103,7 +110,68 @@ function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, 
         end
     end
 
+    if vertical 
+        rot = Rotations.RotX(-pi/2)
+        for j in 1:size(grid)[3] #traverse spanwise
+            for i in 1:size(grid)[2] #traverse chordwise
+                point = [grid[1,i,j] grid[2,i,j] grid[3,i,j]] #pull the point into a single vector
+                point = point * rot #rotate the point
+                grid[1,i,j] = point[1] #put the point back ino the grid
+                grid[2,i,j] = point[2]
+                grid[3,i,j] = point[3]
+            end
+        end
+        #get the difference between where it is and where is should be
+        translateZ = grid[3,1,1] - vertical_translation
+        #move it to where it should be
+        for j in 1:size(grid)[3] #traverse spanwise
+            for i in 1:size(grid)[2] #traverse chordwise
+                grid[3,i,j] = grid[3,i,j] - translateZ
+                grid[2,i,j] = 0
+            end
+        end
+
+    else
+        area = area * 2 #we are assuming that vertical wings aren't mirrored
+    end
+
     return grid, area, average_chord
+end
+
+"""
+printResults(CF, CM, CDiff)
+
+This is a simple function that takes the resulting flight coefficients and prints them out
+"""
+function print_results(CF, CM, CDiff)
+    println("Coefficient of drag: " * string(round(CF[1], digits = 6)))
+    println("Coefficient of spanwise forces: " * string(round(CF[2], digits = 6)))
+    println("Coefficient of lift: " * string(round(CF[3], digits = 6)))
+    println()
+    println("Coefficient of roll or yaw: " * string(round(CM[1], digits = 6)))
+    println("Coefficient of pitching moment: " * string(round(CM[2], digits = 6)))
+    println("Coefficient of roll or yaw: " * string(round(CM[3], digits = 6)))
+    println()
+    println("Coefficient of drag from far field analysis: " * string(round(CDiff, digits = 6)))
+end
+
+"""
+draw_airframe(grids)
+
+This function plots the wings as a 3d scatter plot
+
+grids is a vector of (3,i,j) matricies where i is chordwise and j is spanwise
+"""
+function draw_airframe(grids)
+    scatter3d(aspect_ratio=:equal)
+    for grid in grids
+        for i in range(1, size(grid)[2])
+            for j in range(1, size(grid)[3])
+                scatter3d!([grid[1, i, j]], [grid[2, i, j]], [grid[3, i, j]])
+            end
+        end
+    end
+    scatter3d!(show = true)
 end
 
 end; #this is the end for the module
