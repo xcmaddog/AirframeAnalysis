@@ -167,7 +167,7 @@ spanwise_sections = 60
 tail_root_chord = 2
 horizontal_tail_span = 5
 tail_x_placement = 15
-tail_z_placement = 2
+tail_z_placement = 1
 
 #define vertical tail parameters
 #initial_vertical_tail_span = 0.01
@@ -196,7 +196,7 @@ horizontal_tail_xyz, horizontal_tail_reference_area, horizontal_tail_reference_c
 wing_grid, wing_surface = grid_to_surface_panels(wing_xyz, mirror = true)
 
 #construct the horizontal tail surface
-horizontal_tail_grid, horizontal_tail_surface = grid_to_surface_panels(tail_xyz, mirror = true)
+horizontal_tail_grid, horizontal_tail_surface = grid_to_surface_panels(horizontal_tail_xyz, mirror = true)
 
 # reference parameters (determined by the wing)
 ref = Reference(wing_reference_area, wing_reference_chord, wing_span, rref, Vinf)

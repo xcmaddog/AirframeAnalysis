@@ -121,12 +121,10 @@ function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, 
                 grid[3,i,j] = point[3]
             end
         end
-        #get the difference between where it is and where is should be
-        translateZ = grid[3,1,1] - vertical_translation
         #move it to where it should be
         for j in 1:size(grid)[3] #traverse spanwise
             for i in 1:size(grid)[2] #traverse chordwise
-                grid[3,i,j] = grid[3,i,j] - translateZ
+                grid[3,i,j] = grid[3,i,j] + vertical_translation
                 grid[2,i,j] = 0
             end
         end
