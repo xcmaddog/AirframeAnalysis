@@ -157,6 +157,7 @@ println("Cns: ", Cns)
 println("CDiffs: ", CDiffs)
 =#
 
+#=
 #define wing parameters
 wing_root_chord = 5
 wing_span = 20
@@ -236,3 +237,5 @@ for n in range(0,2)
     properties = get_surface_properties(system)
     write_vtk("withVerticalTail" * string(n), surfaces, properties, symmetric = [false, false, false])
 end
+=#
+
