@@ -239,3 +239,102 @@ for n in range(0,2)
 end
 =#
 
+#define wing parameters
+wing_root_chord = 5
+wing_span = 20
+wing_angle = 5
+spanwise_sections = 4
+
+#define tail parameters
+tail_root_chord = 2
+horizontal_tail_span = 5 
+initial_tail_x_placement = 15
+tail_z_placement = 1
+vertical_tail_span = 5
+
+# Set up freestream parameters
+alpha = -1.0 * pi / 180 # angle of attack
+beta = 0.0 # sideslip angle
+Omega = [0.0, 0.0, 0.0] # rotational velocity around the reference location
+Vinf = 1.0 # reference velocity
+fs = Freestream(Vinf, alpha, beta, Omega)
+
+# Initialize reference location and symmetric option
+cg = 4.5
+rref = SVector(cg, 0.0, 0.0) # using StaticArrays for fixed-size vector
+symmetric = false
+
+# geometry for the right half of the wing
+wing_xyz, wing_reference_area, wing_reference_chord = 
+    MyVortexLattice.grid_from_elliptical_edge(wing_root_chord, wing_span, 6, spanwise_sections, wing_angle, 0, 0, false)
+
+# construct wing surface
+wing_grid, wing_surface = grid_to_surface_panels(wing_xyz, mirror = true)
+
+# reference parameters (determined by the wing)
+ref = Reference(wing_reference_area, wing_reference_chord, wing_span, rref, Vinf)
+
+# Initialize vectors to store results for each derivative
+longs, lats, rolls = [], [], []
+horizontal_ratios = []
+vertical_ratios = []
+
+# Run analysis for each spanwise section count
+for n in range(0, 1)
+    tail_x_placement = initial_tail_x_placement + (0.1 * n)
+
+    #create the horizontal tail geometry
+    horizontal_tail_xyz, horizontal_tail_reference_area, horizontal_tail_reference_chord = 
+        MyVortexLattice.grid_from_elliptical_edge(tail_root_chord, horizontal_tail_span, 6,
+        spanwise_sections, 0.01, tail_x_placement, tail_z_placement, false)
+    
+    #geometry for vertical tail
+    vertical_tail_xyz, vertical_tail_reference_area, vertical_tail_reference_chord = 
+        MyVortexLattice.grid_from_elliptical_edge(tail_root_chord, vertical_tail_span, 6,
+        spanwise_sections, 5, tail_x_placement, tail_z_placement, false)
+
+    #construct vertical tail surface
+    vertical_tail_grid, vertical_tail_surface = grid_to_surface_panels(vertical_tail_xyz, mirror = false)
+    #rotate vertical tail surface
+    R = [1 0 0; 0 0 -1; 0 1 0]
+    vertical_tail_surface = VortexLattice.rotate(vertical_tail_surface, R, [tail_x_placement, 0, tail_z_placement])
+
+    #construct the horizontal tail surface
+    horizontal_tail_grid, horizontal_tail_surface = grid_to_surface_panels(horizontal_tail_xyz, mirror = true)
+
+    # create vector containing the surfaces and perform steady state analysis
+    surfaces = [wing_surface, horizontal_tail_surface, vertical_tail_surface]
+    system = steady_analysis(surfaces, ref, fs; symmetric=symmetric)
+    
+    # retrieve near-field forces
+    #CF, CM = body_forces(system; frame=Wind())
+
+    #retreive stability derivatives
+    body_derivatives(system)
+    dCF, dCM = stability_derivatives(system)
+    alpha, beta, p, q, r = dCM
+    longitudinal = alpha[2]
+    lateral = beta[3]
+    roll = beta[1]
+
+    #calculate volume ratios
+    x = (tail_x_placement + (horizontal_tail_reference_chord / 4)) - cg
+    horizontal_ratio = (horizontal_tail_reference_area * x) / (wing_reference_area * wing_reference_chord)
+    vertical_ratio = (vertical_tail_reference_area * x) / (wing_reference_area * wing_span)
+    
+    # Append the results for each coefficient
+    push!(longs, longitudinal)
+    push!(lats, lateral)
+    push!(rolls, roll)
+    push!(horizontal_ratios, horizontal_ratio)
+    push!(vertical_ratios, vertical_ratio)
+
+    properties = get_surface_properties(system)
+    write_vtk("withVerticalTail" * string(n), surfaces, properties, symmetric = [false, false, false])
+
+    println("run # " * string(n))
+    println("longitudinal stabilization: " * string(longitudinal))
+    println("lateral stabilization: " * string(lateral))
+    println("roll stabilization: " * string(roll))
+    println()
+end

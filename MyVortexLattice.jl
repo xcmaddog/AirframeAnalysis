@@ -40,7 +40,7 @@ Note that the orgin is at the center of the leading edge of the wing before appl
 function ellipical_wing_generator(root_chord, span, num_of_sections, chordwise_translation)
     a = root_chord / 2
     b = span / 2
-    y = range(start = 0, stop = b, length = num_of_sections)
+    y = range(start = 0, stop = b, length = num_of_sections + 1)
     x = (a ^ 2) .* (1 .- ((y .^ 2) ./ (b ^ 2)))
     x = sqrt.(x)
     chord_lengths = 2 .* x 
@@ -72,13 +72,13 @@ This function returns a (3, chord_points, span_points) matrix of points, the
 Note that the spanwise section representing the tip of the wing is omitted because the chord length is zero
 """
 function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, rotation, chordwise_translation, vertical_translation, vertical)
-
+    span_points = span_points + 1
     #initialize the grid
-    grid = zeros(Float64, 3, chord_points, span_points-1)
+    grid = zeros(Float64, 3, chord_points, span_points)
     
     x_leading, y_leading, chord_lengths, area, average_chord = ellipical_wing_generator(root_chord, span, span_points, chordwise_translation)
 
-    for j in 1:span_points-1 #traverse spanwise
+    for j in 1:span_points #traverse spanwise
         for i in 1:chord_points #traverse chordwise
             #define x
             grid[1, i, j] = x_leading[j] - (((i-1) / (chord_points-1)) * chord_lengths[j])
@@ -125,6 +125,9 @@ function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, 
         for j in 1:size(grid)[3] #traverse spanwise
             for i in 1:size(grid)[2] #traverse chordwise
                 grid[3,i,j] = grid[3,i,j] + vertical_translation
+                #grid[2,i,j] = grid[2,i,j] + vertical_translation
+
+                #previous code for line above:
                 grid[2,i,j] = 0
             end
         end
