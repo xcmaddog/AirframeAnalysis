@@ -1,7 +1,7 @@
 #=
 Author: Madsen Evans
 FLOW Lab BYU
-Date: 11/4/2024
+Date: 11/5/2024
 
 This is a module that has some functions useful for creating wings to use
     with the VortexLattice package
