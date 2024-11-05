@@ -125,9 +125,6 @@ function grid_from_elliptical_edge(root_chord, span, chord_points, span_points, 
         for j in 1:size(grid)[3] #traverse spanwise
             for i in 1:size(grid)[2] #traverse chordwise
                 grid[3,i,j] = grid[3,i,j] + vertical_translation
-                #grid[2,i,j] = grid[2,i,j] + vertical_translation
-
-                #previous code for line above:
                 grid[2,i,j] = 0
             end
         end
