@@ -1,17 +1,11 @@
-# Madsen's Wrapper for Vortex Lattice
 #=
-(a) Write a function that takes in the root chord and span of a wing as well as a number
-of sections used to define the wing.
-(b) Have the function use the root chord and span numbers to define an ellipse.
-(c) Use the number of sections to divide up the wing span.
-(d) Have the function return the values of the leading edge locations and chord lengths
-at each of the sections so that your wing geometry approximates an ellipse.
-(e) Compare the efficiency of wings generated with only a few sections to those generated
-with many sections.
-=#
+Author: Madsen Evans
+FLOW Lab BYU
+Date: 11/4/2024
 
-#using Plots
-#using VortexLattice
+This is a module that has some functions useful for creating wings to use
+    with the VortexLattice package
+=#
 
 module MyVortexLattice
 
@@ -38,17 +32,23 @@ Returns the x and y positions of points along the leading edge, the chord
 Note that the orgin is at the center of the leading edge of the wing before applying the translation.
 """
 function ellipical_wing_generator(root_chord, span, num_of_sections, chordwise_translation)
+    # a and b define the two chords of the ellipse
     a = root_chord / 2
     b = span / 2
+    #get the points for the leading edge of the elliptical wing
     y = range(start = 0, stop = b, length = num_of_sections + 1)
     x = (a ^ 2) .* (1 .- ((y .^ 2) ./ (b ^ 2)))
     x = sqrt.(x)
+    #store the lengths of the chords for each y point
     chord_lengths = 2 .* x 
+    #put the center of the leading edge of the wing at the origin, and then shift it by the chordwise_translation
     x = x .+ (chordwise_translation + a)
+    #approximate the area of the wing for reference
     area = 0
     for i in 1:(length(chord_lengths) - 1)
         area = area + (chord_lengths[i] * (y[i+1] - y[i]))
     end
+    #calculate a rough average chord for reference
     average_chord = sum(chord_lengths) / length(chord_lengths)
     return x, y, chord_lengths, area, average_chord
 end
@@ -161,30 +161,15 @@ This function plots the wings as a 3d scatter plot
 grids is a vector of (3,i,j) matricies where i is chordwise and j is spanwise
 """
 function draw_airframe(grids)
-    scatter3d(aspect_ratio=:equal)
-    for grid in grids
-        for i in range(1, size(grid)[2])
-            for j in range(1, size(grid)[3])
-                scatter3d!([grid[1, i, j]], [grid[2, i, j]], [grid[3, i, j]])
+    scatter3d(aspect_ratio=:equal) #prep the plot
+    for grid in grids #for each wing
+        for i in range(1, size(grid)[2]) #traverse chordwise
+            for j in range(1, size(grid)[3]) #traverse spanwise
+                scatter3d!([grid[1, i, j]], [grid[2, i, j]], [grid[3, i, j]]) #plot the point
             end
         end
     end
-    scatter3d!(show = true)
+    scatter3d!(show = true)#display the scatter plot
 end
 
 end; #this is the end for the module
-
-#=
-import .MyVortexLattice
-
-grid = grid_from_elliptical_edge(5, 20, 5, 15)
-
-scatter3d(grid[1, 1 ,:], grid[2,1,:], grid[3,1,:])
-
-for i in range(2,5)
-    scatter3d!(grid[1, i ,:], grid[2, i,:], grid[3, i,:])
-end
-
-#plot!(display)
-#savefig("myPlot.png")
-=#
